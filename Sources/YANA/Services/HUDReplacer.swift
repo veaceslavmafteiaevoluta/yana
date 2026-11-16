@@ -53,6 +53,7 @@ final class HUDReplacer {
             if let tap { CGEvent.tapEnable(tap: tap, enable: true) }
             return pass
         }
+        if isBrightnessKey(type: type, event: event) { BrightnessService.shared.noteBrightnessKey() }
         guard Settings.shared.replaceSystemHUD else { return pass }
 
         let flags = event.flags
@@ -84,6 +85,16 @@ final class HUDReplacer {
             if keyDown { _ = brightness(key == .brightnessUp ? +1 : -1, fine: fine) }
             return nil
         }
+    }
+
+    private func isBrightnessKey(type: CGEventType, event: CGEvent) -> Bool {
+        if type == .keyDown {
+            let code = event.getIntegerValueField(.keyboardEventKeycode)
+            return code == 144 || code == 145
+        }
+        guard type.rawValue == 14, let ns = NSEvent(cgEvent: event), ns.subtype.rawValue == 8 else { return false }
+        let key = Key(rawValue: (ns.data1 & 0xFFFF0000) >> 16)
+        return key == .brightnessUp || key == .brightnessDown
     }
 
     private func volume(_ key: Key, fine: Bool, silent: Bool) {

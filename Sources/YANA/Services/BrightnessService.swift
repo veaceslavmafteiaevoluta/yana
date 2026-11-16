@@ -15,6 +15,9 @@ final class BrightnessService: ObservableObject {
     private var display: CGDirectDisplayID = CGMainDisplayID()
     private var timer: Timer?
     private var suppressUntil = Date.distantPast
+    /// Brightness changes are shown only right after a brightness key press, so the
+    /// automatic adjustments (ambient light sensor, True Tone, Night Shift) never pop the HUD.
+    private var manualUntil = Date.distantPast
     private var initialized = false
 
     func start() {
@@ -40,9 +43,17 @@ final class BrightnessService: ObservableObject {
         guard getFn(display, &v) == 0 else { return }
         if abs(v - brightness) > 0.004 {
             brightness = v
-            if initialized, Date() > suppressUntil, Settings.shared.brightnessHUD { NotchViewModel.shared.showPeek(.brightness) }
+            let now = Date()
+            if initialized, now > suppressUntil, now < manualUntil, Settings.shared.brightnessHUD {
+                NotchViewModel.shared.showPeek(.brightness)
+            }
         }
         initialized = true
+    }
+
+    /// Called by HUDReplacer's event tap for every brightness key press (also when the system HUD is kept).
+    func noteBrightnessKey() {
+        manualUntil = Date().addingTimeInterval(1.5)
     }
 
     func set(_ v: Float) {
