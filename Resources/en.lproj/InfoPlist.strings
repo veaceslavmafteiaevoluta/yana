@@ -1,0 +1,6 @@
+"NSAppleEventsUsageDescription" = "YANA controls Spotify, Music and Messages to show them in the notch.";
+"NSCalendarsUsageDescription" = "YANA shows your upcoming events in the notch.";
+"NSCalendarsFullAccessUsageDescription" = "YANA shows your upcoming events in the notch.";
+"NSContactsUsageDescription" = "YANA shows contact names for messages and calls.";
+"NSLocationUsageDescription" = "YANA uses your location to show the weather.";
+"NSLocationWhenInUseUsageDescription" = "YANA uses your location to show the weather.";
