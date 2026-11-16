@@ -44,7 +44,8 @@ final class WeatherService: NSObject, ObservableObject, CLLocationManagerDelegat
                     s.location = loc
                     s.fetch()
                     CLGeocoder().reverseGeocodeLocation(loc) { marks, _ in
-                        let name = marks?.first?.locality ?? ""
+                        // YANAScreenshotCity: placeholder city for the README screenshots (keeps the real location private)
+                        let name = UserDefaults.standard.string(forKey: "YANAScreenshotCity") ?? marks?.first?.locality ?? ""
                         DispatchQueue.main.async { MainActor.assumeIsolated { WeatherService.shared.city = name } }
                     }
                 }

@@ -15,6 +15,24 @@
 
 ---
 
+<p align="center">
+  <img src="assets/screenshots/tab-home.png" width="720" alt="Open notch: Now Playing and calendar">
+</p>
+
+<table>
+  <tr>
+    <td align="center"><img src="assets/screenshots/closed.png" alt="Closed notch with live activity"><br><sub>Live activity: artwork + equalizer</sub></td>
+    <td align="center"><img src="assets/screenshots/hud-volume.png" alt="Volume HUD"><br><sub>Volume HUD in the notch</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/screenshots/tab-audio.png" alt="Audio tab"><br><sub>Audio: volume, per-app volume, outputs</sub></td>
+    <td align="center"><img src="assets/screenshots/tab-widgets.png" alt="Weather and timer tab"><br><sub>Weather and Pomodoro timer</sub></td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2"><img src="assets/screenshots/tab-system.png" width="49%" alt="System tab"><br><sub>System: CPU / RAM / battery, quick actions, permissions</sub></td>
+  </tr>
+</table>
+
 ## Features
 
 | Module | What it does |
@@ -127,6 +145,8 @@ defaults delete com.yana.app             # reset preferences
 
 The version comes from `CFBundleShortVersionString` in `Resources/Info.plist`.
 
+To regenerate the screenshots in `assets/screenshots/`, play something in Spotify or Music, then run `./scripts/screenshots.sh`. YANA renders its own notch to PNG, so no Screen Recording permission is needed.
+
 ### Project layout
 
 ```
@@ -134,8 +154,9 @@ Sources/YANA/App        entry point, AppDelegate, menu bar item
 Sources/YANA/Core       notch window, notch shape, state machine (closed / peek / open)
 Sources/YANA/Services   one singleton per area: media, audio, messages, calls, weather…
 Sources/YANA/Views      SwiftUI tabs, HUD and Settings window
+assets/screenshots      README images
 Resources               Info.plist, app icon, translations (en, it)
-scripts                 icon generation and release packaging
+scripts                 icon generation, screenshots and release packaging
 ```
 
 > **Note for contributors:** SwiftUI macros (`@State`, `@Observable`, `#Preview`) don't compile without Xcode. Use `Box<T>` with `@StateObject` instead (see `Views/Components.swift`). Every user-facing string goes through `L("English text")` and has an entry in `Resources/it.lproj/Localizable.strings`.

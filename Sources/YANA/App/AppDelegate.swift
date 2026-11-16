@@ -50,6 +50,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             MainActor.assumeIsolated { NotchViewModel.shared.updateScreen() }
         }
         setupStatusItem()
+        Screenshotter.runIfRequested(host: host)
 
         // Ask for Accessibility automatically only once; afterwards only from Settings / the menu.
         if !Permissions.accessibility && !UserDefaults.standard.bool(forKey: "didPromptAccessibility") {
