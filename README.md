@@ -42,7 +42,7 @@
 | **Universal control** | Media keys for any other app (browsers, YouTube, VLC, Podcasts…) |
 | **Audio** | System volume, mute, output switching (AirPods, HDMI…), per-app volume for Spotify/Music |
 | **HUD** | Replaces the macOS volume and brightness overlay; shows charging and low battery (20% / 10%) |
-| **Notifications** | Notifications from every app (WhatsApp, Telegram, Mail…) inside the notch |
+| **Notifications** | Notifications from every app (WhatsApp, Telegram, Mail…) inside the notch, grouped by app: dismiss, clear all, copy, mute pop-ups per app |
 | **Messages** | SMS/iMessage preview, conversations and quick reply |
 | **Phone** | iPhone recent calls, missed-call alerts, keypad, calls via iPhone (Continuity) or FaceTime audio |
 | **Calendar** | Upcoming events, reminder 10 minutes before, one-click "Join" for Zoom / Meet / Teams / Webex |
@@ -102,7 +102,7 @@ YANA only asks for what each feature needs. You can see and grant everything in 
 - **Close:** move the pointer away, click outside, or swipe up on the top bar.
 - **Switch tabs:** click the icons on the left of the top bar, or swipe left/right on it.
 - **Skip tracks:** with music playing and the notch closed, swipe left/right on the notch.
-- **Crowded menu bar:** if an app's menus or the status icons reach the notch, the live activity hides its side parts so nothing is covered. It comes back when there's room again.
+- **Crowded menu bar:** the live activity stays visible even when an app's menus or the status icons reach the notch. Move the pointer into the menu bar next to it and it steps aside so you can read and click the menus; it comes back when you leave. Prefer it hidden whenever something is underneath? Turn off *Always show the live activity while playing* in Settings.
 - **Volume / brightness keys:** the HUD appears in the notch. Hold **⌥⇧** for fine steps.
 - **Settings:** the capsule icon in the menu bar › **Settings…** (⌘,). It has a live preview of the notch.
 

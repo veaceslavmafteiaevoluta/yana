@@ -132,3 +132,19 @@
 "Height" = "Altezza";
 "Width" = "Larghezza";
 "Reset alignment" = "Ripristina allineamento";
+
+/* Notifications management */
+"%ld notifications" = "%ld notifiche";
+"Clear all" = "Cancella tutto";
+"Show less" = "Mostra meno";
+"+%ld more" = "+%ld altre";
+"Dismiss" = "Archivia";
+"Copy text" = "Copia testo";
+"Open %@" = "Apri %@";
+"Clear notifications from this app" = "Cancella le notifiche di questa app";
+"Mute pop-ups from %@" = "Silenzia i popup di %@";
+"Show pop-ups from %@" = "Mostra i popup di %@";
+
+/* Live activity */
+"Always show the live activity while playing" = "Mostra sempre la live activity durante la riproduzione";
+"Keeps artwork and equalizer beside the notch. When menus are underneath, the ears step aside as the mouse reaches the menu bar." = "Tiene copertina ed equalizzatore accanto al notch. Se sotto ci sono dei menu, le orecchie si spostano quando il mouse arriva nella barra dei menu.";

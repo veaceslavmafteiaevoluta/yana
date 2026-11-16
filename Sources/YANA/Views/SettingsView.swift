@@ -119,6 +119,8 @@ struct SettingsView: View {
             Section(L("Behavior")) {
                 Toggle(L("Open on hover (otherwise on click)"), isOn: $s.hoverToOpen)
                 Toggle(L("Trackpad haptic feedback"), isOn: $s.haptics)
+                Toggle(L("Always show the live activity while playing"), isOn: $s.persistentEars)
+                    .help(L("Keeps artwork and equalizer beside the notch. When menus are underneath, the ears step aside as the mouse reaches the menu bar."))
                 Toggle(L("Launch YANA at login"), isOn: Binding(
                     get: { SMAppService.mainApp.status == .enabled },
                     set: { on in

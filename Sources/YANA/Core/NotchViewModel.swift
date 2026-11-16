@@ -183,14 +183,49 @@ final class NotchViewModel: ObservableObject {
     private var wasMouseDown = false
     private var ticks = 0
     private var wantedEars = false
+    /// Menus or status items sit where the ears would go.
+    private var menusUnderEars = false
+    /// Persistent ears temporarily step aside so the menus underneath can be read and clicked.
+    private var yielding = false
+    private var yieldEndsAt: Date?
 
     /// Re-measures the menu bar around the notch (only matters while the live activity would be shown).
-    func updateEarsFit() {
-        guard MediaService.shared.isPlaying || TimerService.shared.isActive, let s = screen else { return }
-        let fit = MenuBarSpace.earsFit(screen: s, notchWidth: notchSize.width, earWidth: earWidth + topRadius)
-        if fit != earsFit {
-            NSLog("[YANA] live activity ears \(fit ? "shown" : "hidden: menu bar items next to the notch")")
-            withAnimation(spring) { earsFit = fit }
+    /// Without `Settings.persistentEars` the ears hide while menus are underneath; with it they stay,
+    /// and only step aside while the mouse is in the menu bar next to them (see `updateYield`).
+    func updateEarsFit(force: Bool = false) {
+        guard force || MediaService.shared.isPlaying || TimerService.shared.isActive, let s = screen else { return }
+        let covered = !MenuBarSpace.earsFit(screen: s, notchWidth: notchSize.width, earWidth: earWidth + topRadius)
+        if covered != menusUnderEars {
+            menusUnderEars = covered
+            NSLog("[YANA] menu bar items \(covered ? "under" : "clear of") the live activity ears")
+        }
+        if !covered || !Settings.shared.persistentEars { yielding = false; yieldEndsAt = nil }
+        applyEarsFit()
+    }
+
+    private func applyEarsFit() {
+        let fit = !menusUnderEars || (Settings.shared.persistentEars && !yielding)
+        if fit != earsFit { withAnimation(spring) { earsFit = fit } }
+    }
+
+    /// Mouse in the menu bar band beside the notch (over the ears or the menus around them) → ears step aside;
+    /// they come back 0.8 s after the mouse leaves the band and no pull-down menu is open.
+    private func updateYield(mouse: NSPoint, now: Date) {
+        guard menusUnderEars, Settings.shared.persistentEars, state == .closed, let s = screen else { return }
+        let band = max(notchSize.height, s.frame.maxY - s.visibleFrame.maxY)
+        let reach = notchSize.width / 2 + earWidth + topRadius + 160
+        let inBand = mouse.y >= s.frame.maxY - band && abs(mouse.x - s.frame.midX) <= reach
+            && abs(mouse.x - s.frame.midX) > notchSize.width / 2
+        if inBand {
+            yieldEndsAt = nil
+            if !yielding { yielding = true; applyEarsFit() }
+        } else if yielding {
+            if MenuBarSpace.menuIsOpen() { yieldEndsAt = nil; return }
+            if let end = yieldEndsAt {
+                if now >= end { yielding = false; yieldEndsAt = nil; applyEarsFit() }
+            } else {
+                yieldEndsAt = now.addingTimeInterval(0.8)
+            }
         }
     }
     private var scrollX: CGFloat = 0
@@ -208,10 +243,13 @@ final class NotchViewModel: ObservableObject {
             wantedEars = wants
             updateEarsFit()
         }
+        updateYield(mouse: mouse, now: now)
 
         switch state {
         case .closed, .peek:
-            let hot = rect(for: CGSize(width: max(bodySize.width, notchSize.width) + 2 * topRadius,
+            // Ears over menus: only the notch itself opens YANA, the ears' area belongs to the menus.
+            let hotWidth = state == .closed && menusUnderEars ? notchSize.width : max(bodySize.width, notchSize.width)
+            let hot = rect(for: CGSize(width: hotWidth + 2 * topRadius,
                                        height: max(bodySize.height, notchSize.height))).insetBy(dx: -4, dy: -2)
             guard hot.contains(mouse) else { hoverSince = nil; return }
             if mouseDown {

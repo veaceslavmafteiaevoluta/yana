@@ -23,6 +23,33 @@ final class NotificationsService: ObservableObject {
 
     @Published private(set) var hasAccess = false
     @Published private(set) var items: [AppNotification] = []
+    /// Notifications dismissed in YANA (macOS offers no public API to remove them from Notification Center).
+    @Published private(set) var dismissed: Set<Int64>
+    /// Everything up to this rec_id was cleared with "Clear all".
+    @Published private(set) var clearedUpTo: Int64
+    /// Apps whose notifications never pop up in the notch.
+    @Published private(set) var mutedApps: Set<String>
+
+    /// What the Notifications tab shows.
+    var visible: [AppNotification] { items.filter { $0.id > clearedUpTo && !dismissed.contains($0.id) } }
+
+    /// Visible notifications grouped by app, newest app first.
+    var groups: [(bundleID: String, items: [AppNotification])] {
+        var order: [String] = []
+        var map: [String: [AppNotification]] = [:]
+        for n in visible {
+            if map[n.bundleID] == nil { order.append(n.bundleID) }
+            map[n.bundleID, default: []].append(n)
+        }
+        return order.map { ($0, map[$0]!) }
+    }
+
+    private let d = UserDefaults.standard
+    private init() {
+        dismissed = Set((d.array(forKey: "notifications.dismissed") as? [NSNumber] ?? []).map(\.int64Value))
+        clearedUpTo = (d.object(forKey: "notifications.clearedUpTo") as? NSNumber)?.int64Value ?? 0
+        mutedApps = Set(d.stringArray(forKey: "notifications.mutedApps") ?? [])
+    }
 
     /// Apps already handled by dedicated modules (avoid duplicate peeks).
     private let skipPeek: Set<String> = ["com.apple.MobileSMS", "com.apple.iCal"]
@@ -61,12 +88,17 @@ final class NotificationsService: ObservableObject {
             list.append(n)
         }
         items = list
+        // Forget dismissed ids that dropped out of the window, so the stored set stays small.
+        if let oldest = list.last?.id {
+            let kept = dismissed.filter { $0 >= oldest }
+            if kept.count != dismissed.count { dismissed = kept; saveDismissed() }
+        }
         guard !first, let newest = list.first(where: { $0.id > prev }) else { return }
         let b = newest.bundleID.lowercased()
         if b.contains("telephony") || b.contains("facetime") || b.contains("callservices") {
             // Continuity call from the iPhone (incoming / missed)
             NotchViewModel.shared.showPeek(.call(title: newest.title, body: newest.body.isEmpty ? newest.subtitle : newest.body), duration: 8)
-        } else if Settings.shared.notificationPeeks, !skipPeek.contains(newest.bundleID) {
+        } else if Settings.shared.notificationPeeks, !skipPeek.contains(newest.bundleID), !mutedApps.contains(newest.bundleID) {
             NotchViewModel.shared.showPeek(.notification(newest), duration: 5)
         }
     }
@@ -82,6 +114,42 @@ final class NotificationsService: ObservableObject {
         let date = (plist["date"] as? Double).map { Date(timeIntervalSinceReferenceDate: $0) }
             ?? Date(timeIntervalSinceReferenceDate: delivered)
         return AppNotification(id: id, bundleID: bundle, title: title, subtitle: subtitle, body: body, date: date)
+    }
+
+    // MARK: Management (local to YANA)
+
+    func dismiss(_ n: AppNotification) {
+        dismissed.insert(n.id); saveDismissed()
+    }
+
+    func dismissAll(from bundleID: String) {
+        for n in items where n.bundleID == bundleID { dismissed.insert(n.id) }
+        saveDismissed()
+    }
+
+    func clearAll() {
+        guard let top = items.first?.id else { return }
+        clearedUpTo = top
+        dismissed = []
+        d.set(NSNumber(value: top), forKey: "notifications.clearedUpTo")
+        saveDismissed()
+    }
+
+    func isMuted(_ bundleID: String) -> Bool { mutedApps.contains(bundleID) }
+
+    func toggleMute(_ bundleID: String) {
+        if mutedApps.contains(bundleID) { mutedApps.remove(bundleID) } else { mutedApps.insert(bundleID) }
+        d.set(Array(mutedApps), forKey: "notifications.mutedApps")
+    }
+
+    func copy(_ n: AppNotification) {
+        let text = [n.title, n.subtitle, n.body].filter { !$0.isEmpty }.joined(separator: "\n")
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+    }
+
+    private func saveDismissed() {
+        d.set(dismissed.map { NSNumber(value: $0) }, forKey: "notifications.dismissed")
     }
 
     func open(_ n: AppNotification) {

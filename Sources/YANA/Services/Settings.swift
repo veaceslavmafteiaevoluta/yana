@@ -8,6 +8,8 @@ final class Settings: ObservableObject {
     // Generale
     @Published var hoverToOpen: Bool { didSet { d.set(hoverToOpen, forKey: "hoverToOpen") } }
     @Published var haptics: Bool { didSet { d.set(haptics, forKey: "haptics") } }
+    /// Keep the live-activity ears visible while music/timer runs, even over menu bar items next to the notch.
+    @Published var persistentEars: Bool { didSet { d.set(persistentEars, forKey: "persistentEars"); NotchViewModel.shared.updateEarsFit(force: true) } }
     // HUD e notifiche
     @Published var replaceSystemHUD: Bool { didSet { d.set(replaceSystemHUD, forKey: "replaceSystemHUD") } }
     @Published var volumeHUD: Bool { didSet { d.set(volumeHUD, forKey: "volumeHUD") } }
@@ -28,7 +30,7 @@ final class Settings: ObservableObject {
 
     private init() {
         d.register(defaults: [
-            "hoverToOpen": true, "haptics": true,
+            "hoverToOpen": true, "haptics": true, "persistentEars": true,
             "replaceSystemHUD": true, "volumeHUD": true, "brightnessHUD": true,
             "notificationPeeks": true, "trackPeeks": true,
             "glassBackground": true, "glassDarkness": 0.28, "glassFade": 36.0,
@@ -37,6 +39,7 @@ final class Settings: ObservableObject {
         ])
         hoverToOpen = d.bool(forKey: "hoverToOpen")
         haptics = d.bool(forKey: "haptics")
+        persistentEars = d.bool(forKey: "persistentEars")
         replaceSystemHUD = d.bool(forKey: "replaceSystemHUD")
         volumeHUD = d.bool(forKey: "volumeHUD")
         brightnessHUD = d.bool(forKey: "brightnessHUD")

@@ -37,6 +37,16 @@ enum MenuBarSpace {
         return true
     }
 
+    /// True while another app shows a pull-down menu (window at the pop-up menu level).
+    static func menuIsOpen() -> Bool {
+        let me = ProcessInfo.processInfo.processIdentifier
+        guard let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]] else { return false }
+        let menuLevel = Int(CGWindowLevelForKey(.popUpMenuWindow))
+        return list.contains {
+            ($0[kCGWindowLayer as String] as? Int) == menuLevel && ($0[kCGWindowOwnerPID as String] as? pid_t) != me
+        }
+    }
+
     private static func frontAppMenus() -> [CGRect] {
         guard let app = NSWorkspace.shared.frontmostApplication else { return [] }
         return items(of: app.processIdentifier, attribute: kAXMenuBarAttribute)
