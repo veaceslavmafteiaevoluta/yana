@@ -85,7 +85,7 @@ YANA only asks for what each feature needs. You can see and grant everything in 
 
 | Permission | Used for | Without it |
 |---|---|---|
-| **Accessibility** | Replacing the volume/brightness HUD, media keys, lock screen | The system HUD stays and the universal media control doesn't work |
+| **Accessibility** | Replacing the volume/brightness HUD, media keys, lock screen, keeping the live activity clear of menu-bar items | The system HUD stays and the universal media control doesn't work |
 | **Full Disk Access** | Reading SMS/iMessage, iPhone call history and app notifications | The Messages, Phone and Notifications tabs stay empty |
 | **Calendar** | Upcoming events and meeting links | No events |
 | **Contacts** | Showing names instead of numbers | Numbers and emails are shown |
@@ -102,6 +102,7 @@ YANA only asks for what each feature needs. You can see and grant everything in 
 - **Close:** move the pointer away, click outside, or swipe up on the top bar.
 - **Switch tabs:** click the icons on the left of the top bar, or swipe left/right on it.
 - **Skip tracks:** with music playing and the notch closed, swipe left/right on the notch.
+- **Crowded menu bar:** if an app's menus or the status icons reach the notch, the live activity hides its side parts so nothing is covered. It comes back when there's room again.
 - **Volume / brightness keys:** the HUD appears in the notch. Hold **⌥⇧** for fine steps.
 - **Settings:** the capsule icon in the menu bar › **Settings…** (⌘,). It has a live preview of the notch.
 

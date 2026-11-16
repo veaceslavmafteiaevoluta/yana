@@ -60,6 +60,8 @@ final class NotchViewModel: ObservableObject {
     @Published var notchSize = CGSize(width: 185, height: 32)
     @Published var hasPhysicalNotch = true
     @Published var pendingChatGuid: String?
+    /// False when the live-activity ears would cover menus or status items (see MenuBarSpace).
+    @Published private(set) var earsFit = true
 
     /// Keeps the notch open (e.g. while typing a reply).
     var keepOpen = false
@@ -92,6 +94,9 @@ final class NotchViewModel: ObservableObject {
 
     var earWidth: CGFloat { notchSize.height + 10 }
 
+    /// The closed notch shows the live activity (artwork / timer on the sides) only if there's room for it.
+    var showsEars: Bool { (MediaService.shared.isPlaying || TimerService.shared.isActive) && earsFit }
+
     var bodySize: CGSize {
         let w = notchSize.width, h = notchSize.height
         switch state {
@@ -101,7 +106,7 @@ final class NotchViewModel: ObservableObject {
             if peek?.isTall ?? false { return CGSize(width: max(w + 220, 420), height: h + 66) }
             return CGSize(width: w + 200, height: h)
         case .closed:
-            if MediaService.shared.isPlaying || TimerService.shared.isActive { return CGSize(width: w + 2 * earWidth, height: h) }
+            if showsEars { return CGSize(width: w + 2 * earWidth, height: h) }
             return CGSize(width: w, height: h)
         }
     }
@@ -115,6 +120,21 @@ final class NotchViewModel: ObservableObject {
         updateScreen()
         timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 20.0, repeats: true) { _ in
             MainActor.assumeIsolated { NotchViewModel.shared.tick() }
+        }
+        let ws = NSWorkspace.shared.notificationCenter
+        ws.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { _ in
+            MainActor.assumeIsolated { NotchViewModel.shared.updateEarsFit() }
+        }
+        for name in [NSWorkspace.didLaunchApplicationNotification, NSWorkspace.didTerminateApplicationNotification] {
+            ws.addObserver(forName: name, object: nil, queue: .main) { _ in
+                MainActor.assumeIsolated {
+                    MenuBarSpace.invalidateStatusItems()
+                    // Status items appear a moment after the app launches.
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                        MainActor.assumeIsolated { MenuBarSpace.invalidateStatusItems(); NotchViewModel.shared.updateEarsFit() }
+                    }
+                }
+            }
         }
         NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { _ in
             MainActor.assumeIsolated { NotchViewModel.shared.handleClick() }
@@ -161,6 +181,18 @@ final class NotchViewModel: ObservableObject {
     // MARK: Mouse tracking
 
     private var wasMouseDown = false
+    private var ticks = 0
+    private var wantedEars = false
+
+    /// Re-measures the menu bar around the notch (only matters while the live activity would be shown).
+    func updateEarsFit() {
+        guard MediaService.shared.isPlaying || TimerService.shared.isActive, let s = screen else { return }
+        let fit = MenuBarSpace.earsFit(screen: s, notchWidth: notchSize.width, earWidth: earWidth + topRadius)
+        if fit != earsFit {
+            NSLog("[YANA] live activity ears \(fit ? "shown" : "hidden: menu bar items next to the notch")")
+            withAnimation(spring) { earsFit = fit }
+        }
+    }
     private var scrollX: CGFloat = 0
     private var scrollY: CGFloat = 0
     private var scrollConsumed = false
@@ -170,6 +202,12 @@ final class NotchViewModel: ObservableObject {
         let mouseDown = NSEvent.pressedMouseButtons & 1 != 0
         defer { wasMouseDown = mouseDown }
         let now = Date()
+        ticks += 1
+        let wants = MediaService.shared.isPlaying || TimerService.shared.isActive
+        if wants != wantedEars || (ticks % 20 == 0 && state == .closed) {
+            wantedEars = wants
+            updateEarsFit()
+        }
 
         switch state {
         case .closed, .peek:

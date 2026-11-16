@@ -10,7 +10,7 @@ struct NotchRootView: View {
     var body: some View {
         let size = vm.frameSize
         let shape = NotchShape(topRadius: vm.topRadius, bottomRadius: vm.bottomRadius)
-        let visible = vm.hasPhysicalNotch || vm.state != .closed || media.isPlaying || timer.isActive
+        let visible = vm.hasPhysicalNotch || vm.state != .closed || vm.showsEars
 
         VStack(spacing: 0) {
             ZStack(alignment: .top) {
@@ -34,11 +34,12 @@ struct NotchRootView: View {
         .animation(vm.spring, value: vm.state)
         .animation(vm.spring, value: media.isPlaying)
         .animation(vm.spring, value: timer.isActive)
+        .animation(vm.spring, value: vm.earsFit)
     }
 
     private var shadowColor: Color {
         if vm.state == .closed {
-            return settings.ambientLight && media.isPlaying ? media.accent.opacity(0.45 * settings.ambientIntensity) : .clear
+            return settings.ambientLight && media.isPlaying && vm.earsFit ? media.accent.opacity(0.45 * settings.ambientIntensity) : .clear
         }
         return .black.opacity(0.45)
     }
@@ -106,7 +107,9 @@ struct ClosedNotchView: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            if media.isPlaying {
+            if !vm.earsFit {
+                EmptyView()
+            } else if media.isPlaying {
                 ArtworkView(size: vm.notchSize.height - 12, corner: 5)
                     .padding(.leading, 8)
             } else if timer.isActive {
@@ -114,7 +117,9 @@ struct ClosedNotchView: View {
                     .padding(.leading, 12)
             }
             Spacer(minLength: 0)
-            if timer.isActive {
+            if !vm.earsFit {
+                EmptyView()
+            } else if timer.isActive {
                 TimelineView(.periodic(from: .now, by: 1)) { ctx in
                     Text(formatTime(timer.remaining(at: ctx.date)))
                         .font(.system(size: 12, weight: .semibold)).monospacedDigit()
