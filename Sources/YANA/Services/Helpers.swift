@@ -8,13 +8,30 @@ func L(_ key: String, _ args: CVarArg...) -> String {
     String(format: NSLocalizedString(key, comment: ""), locale: Locale.current, arguments: args)
 }
 
+/// Diagnostic log, compiled only into debug builds (`swift build`); release builds stay silent.
+func debugLog(_ message: @autoclosure () -> String) {
+    #if DEBUG
+    NSLog("[YANA] %@", message())
+    #endif
+}
+
 enum AppleScript {
+    /// Serial queue for every AppleScript: Apple events can take hundreds of ms (or time out when the
+    /// target app hangs), so they never run on the main thread. Serial = commands keep their order.
+    static let queue = DispatchQueue(label: "com.yana.applescript", qos: .userInitiated)
+
+    /// Runs synchronously on the calling thread: call it only from `AppleScript.queue`.
     @discardableResult
     static func run(_ source: String) -> NSAppleEventDescriptor? {
+        dispatchPrecondition(condition: .notOnQueue(.main))
         var error: NSDictionary?
         let result = NSAppleScript(source: source)?.executeAndReturnError(&error)
-        if let error { NSLog("[YANA] AppleScript error: \(error)") }
+        if let error { debugLog("AppleScript error: \(error)") }
         return result
+    }
+    /// Fire-and-forget script on `AppleScript.queue`.
+    static func runAsync(_ source: String) {
+        queue.async { run(source) }
     }
     static func escape(_ s: String) -> String {
         s.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
@@ -27,7 +44,11 @@ enum Permissions {
         AXIsProcessTrustedWithOptions(["AXTrustedCheckOptionPrompt": true] as CFDictionary)
     }
     static var fullDisk: Bool {
-        FileHandle(forReadingAtPath: NSHomeDirectory() + "/Library/Messages/chat.db") != nil
+        // A real open() is needed: access()/isReadableFile don't reflect TCC. Close the descriptor right away.
+        let fd = open(NSHomeDirectory() + "/Library/Messages/chat.db", O_RDONLY)
+        guard fd >= 0 else { return false }
+        close(fd)
+        return true
     }
     static func openPane(_ anchor: String) {
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?\(anchor)") {

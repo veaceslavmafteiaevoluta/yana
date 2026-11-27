@@ -62,7 +62,7 @@ final class SystemStats: ObservableObject {
     func displaySleep() { SystemInput.shell("/usr/bin/pmset", ["displaysleepnow"]) }
     func screenshot() { SystemInput.shell("/usr/sbin/screencapture", ["-iUc"]) }
     func toggleDarkMode() {
-        AppleScript.run("tell application \"System Events\" to tell appearance preferences to set dark mode to not dark mode")
+        AppleScript.runAsync("tell application \"System Events\" to tell appearance preferences to set dark mode to not dark mode")
     }
     func openActivityMonitor() { SystemInput.shell("/usr/bin/open", ["-a", "Activity Monitor"]) }
     func openSettings() { SystemInput.shell("/usr/bin/open", ["-a", "System Settings"]) }

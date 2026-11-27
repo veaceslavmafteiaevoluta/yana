@@ -68,8 +68,8 @@ final class WeatherService: NSObject, ObservableObject, CLLocationManagerDelegat
 
     func fetch() {
         guard let loc = location else { return }
-        let lat = String(format: "%.3f", loc.coordinate.latitude)
-        let lon = String(format: "%.3f", loc.coordinate.longitude)
+        let lat = String(format: "%.2f", loc.coordinate.latitude)
+        let lon = String(format: "%.2f", loc.coordinate.longitude)
         let url = URL(string: "https://api.open-meteo.com/v1/forecast?latitude=\(lat)&longitude=\(lon)&current=temperature_2m,weather_code&hourly=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&forecast_days=2&timezone=auto&timeformat=unixtime")!
         URLSession.shared.dataTask(with: url) { data, _, _ in
             guard let data, let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }

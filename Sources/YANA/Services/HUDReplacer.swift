@@ -43,7 +43,7 @@ final class HUDReplacer {
         CFRunLoopAddSource(CFRunLoopGetMain(), src, .commonModes)
         CGEvent.tapEnable(tap: t, enable: true)
         active = true
-        NSLog("[YANA] HUD replacer attivo")
+        debugLog("HUD replacer active")
         return true
     }
 

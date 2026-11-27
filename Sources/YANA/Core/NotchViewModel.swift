@@ -170,7 +170,7 @@ final class NotchViewModel: ObservableObject {
         let f = NSRect(x: s.frame.midX - windowSize.width / 2, y: s.frame.maxY - windowSize.height,
                        width: windowSize.width, height: windowSize.height)
         window?.setFrame(f, display: true)
-        NSLog("[YANA] screen=\(s.frame) notch=\(notchSize) window=\(window?.frame ?? .zero)")
+        debugLog("screen=\(s.frame) notch=\(notchSize) window=\(window?.frame ?? .zero)")
     }
 
     private func rect(for size: CGSize) -> NSRect {
@@ -197,7 +197,7 @@ final class NotchViewModel: ObservableObject {
         let covered = !MenuBarSpace.earsFit(screen: s, notchWidth: notchSize.width, earWidth: earWidth + topRadius)
         if covered != menusUnderEars {
             menusUnderEars = covered
-            NSLog("[YANA] menu bar items \(covered ? "under" : "clear of") the live activity ears")
+            debugLog("menu bar items \(covered ? "under" : "clear of") the live activity ears")
         }
         if !covered || !Settings.shared.persistentEars { yielding = false; yieldEndsAt = nil }
         applyEarsFit()

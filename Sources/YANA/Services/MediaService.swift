@@ -50,6 +50,14 @@ final class MediaService: ObservableObject {
     var isPlaying: Bool { info?.isPlaying ?? false }
     private var artworkKey = ""
     private var timer: Timer?
+    /// A fetch is running on `AppleScript.queue`; another `refresh()` meanwhile only asks for one more round.
+    private var refreshing = false
+    private var refreshAgain = false
+    /// Bumped by every control command: a fetch that started earlier may predate the command,
+    /// so its result is dropped instead of undoing the optimistic update.
+    private var commandGen = 0
+    /// Latest slider value per app not yet sent (volume drags are coalesced into one script each).
+    private var pendingVolume: [MediaApp: Int] = [:]
 
     private init() {
         let dnc = DistributedNotificationCenter.default()
@@ -77,9 +85,27 @@ final class MediaService: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { MainActor.assumeIsolated { MediaService.shared.refresh() } }
     }
 
+    /// Reads both players on `AppleScript.queue` and applies the result on the main thread.
     func refresh() {
-        let s = fetch(.spotify)
-        let m = fetch(.music)
+        if refreshing { refreshAgain = true; return }
+        refreshing = true
+        let gen = commandGen
+        let running = [MediaApp.spotify, .music].filter(\.isRunning)
+        AppleScript.queue.async {
+            let s = running.contains(.spotify) ? MediaService.fetch(.spotify) : nil
+            let m = running.contains(.music) ? MediaService.fetch(.music) : nil
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    let svc = MediaService.shared
+                    svc.refreshing = false
+                    if gen == svc.commandGen { svc.apply(spotify: s, music: m) } else { svc.refreshAgain = true }
+                    if svc.refreshAgain { svc.refreshAgain = false; svc.refresh() }
+                }
+            }
+        }
+    }
+
+    private func apply(spotify s: NowPlaying?, music m: NowPlaying?) {
         var vols: [MediaApp: Double] = [:]
         if let s { vols[.spotify] = s.volume }
         if let m { vols[.music] = m.volume }
@@ -107,8 +133,8 @@ final class MediaService: ObservableObject {
         }
     }
 
-    private func fetch(_ app: MediaApp) -> NowPlaying? {
-        guard app.isRunning else { return nil }
+    /// Runs on `AppleScript.queue`; the caller has already checked that the app is running.
+    private nonisolated static func fetch(_ app: MediaApp) -> NowPlaying? {
         let script: String
         switch app {
         case .spotify:
@@ -172,21 +198,29 @@ final class MediaService: ObservableObject {
                 }
             }.resume()
         case .music:
-            let d = AppleScript.run("""
-            tell application id "com.apple.Music"
-                try
-                    return raw data of artwork 1 of current track
-                end try
-            end tell
-            """)?.data
-            setArtwork(d.flatMap(NSImage.init(data:)))
+            AppleScript.queue.async {
+                let d = AppleScript.run("""
+                tell application id "com.apple.Music"
+                    try
+                        return raw data of artwork 1 of current track
+                    end try
+                end tell
+                """)?.data
+                let img = d.flatMap(NSImage.init(data:))
+                DispatchQueue.main.async {
+                    MainActor.assumeIsolated {
+                        if MediaService.shared.artworkKey == key { MediaService.shared.setArtwork(img) }
+                    }
+                }
+            }
         }
     }
 
     // MARK: Controls
 
     private func tell(_ app: MediaApp, _ cmd: String) {
-        AppleScript.run("tell application id \"\(app.bundleID)\" to \(cmd)")
+        commandGen += 1
+        AppleScript.runAsync("tell application id \"\(app.bundleID)\" to \(cmd)")
         refreshSoon()
     }
 
@@ -212,7 +246,17 @@ final class MediaService: ObservableObject {
     }
     func setVolume(_ v: Double, for app: MediaApp) {
         appVolumes[app] = v
-        AppleScript.run("tell application id \"\(app.bundleID)\" to set sound volume to \(Int(v))")
+        commandGen += 1
+        let queued = pendingVolume[app] != nil
+        pendingVolume[app] = Int(v)
+        guard !queued else { return }   // the script already queued will send the latest value
+        AppleScript.queue.async {
+            let value = DispatchQueue.main.sync {
+                MainActor.assumeIsolated { MediaService.shared.pendingVolume.removeValue(forKey: app) }
+            }
+            guard let value else { return }
+            AppleScript.run("tell application id \"\(app.bundleID)\" to set sound volume to \(value)")
+        }
     }
     func openApp(_ app: MediaApp) {
         guard let url = app.appURL else { return }

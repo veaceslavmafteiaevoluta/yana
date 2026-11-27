@@ -150,7 +150,7 @@ final class MessagesService: ObservableObject {
     func send(_ text: String, to guid: String) {
         let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !t.isEmpty else { return }
-        AppleScript.run("""
+        AppleScript.runAsync("""
         tell application "Messages"
             send "\(AppleScript.escape(t))" to chat id "\(AppleScript.escape(guid))"
         end tell

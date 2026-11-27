@@ -94,7 +94,7 @@ YANA only asks for what each feature needs. You can see and grant everything in 
 
 > Accessibility and Full Disk Access must be added by hand in **System Settings › Privacy & Security**. Use the **+** button, pick `/Applications/YANA.app`, then quit and reopen YANA.
 
-**Privacy:** every database is opened read-only and nothing leaves your Mac. The only network requests are the weather (Open-Meteo, with coordinates rounded to about 100 m) and Spotify album art. There is no analytics and no telemetry.
+**Privacy:** every database is opened read-only and nothing leaves your Mac. The only network requests are the weather (Open-Meteo, with coordinates rounded to about 1 km) and Spotify album art. There is no analytics and no telemetry.
 
 ## Usage
 
